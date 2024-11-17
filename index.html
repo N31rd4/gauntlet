@@ -190,7 +190,7 @@
                 wrapper.className = 'selected-image-wrapper';
                 
                 const img = document.createElement('img');
-                img.src = `/games/${index}.png`;
+                img.src = `games/${index}.png`;
                 img.alt = `${index}`;
                 
                 if (position < currentDarkened) {
@@ -199,14 +199,14 @@
                     wrapper.appendChild(darkOverlay);
                     
                     const correctMark = document.createElement('img');
-                    correctMark.src = '/correct.png';
+                    correctMark.src = 'correct.png';
                     correctMark.className = 'correct-mark';
                     wrapper.appendChild(correctMark);
                 }
 
                 if (position === currentDarkened) {
                     const arrowMark = document.createElement('img');
-                    arrowMark.src = '/arrow.png';
+                    arrowMark.src = 'arrow.png';
                     arrowMark.className = 'arrow-mark';
                     wrapper.appendChild(arrowMark);
                 }
@@ -233,7 +233,7 @@
             wrapper.setAttribute('data-index', i);
             
             const img = document.createElement('img');
-            img.src = `/games/${i}.png`;
+            img.src = `games/${i}.png`;
             img.alt = `${i}`;
             
             const overlay = document.createElement('div');
