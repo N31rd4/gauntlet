@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            background: #f0f0f0;
+        }
+
+        .container {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .image-wrapper {
+            position: relative;
+            aspect-ratio: 1;
+        }
+
+        .image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            cursor: pointer;
+            border: 3px solid transparent;
+            border-radius: 8px;
+            transition: border-color 0.2s;
+        }
+
+        .image-wrapper.selected img {
+            border-color: #4CAF50;
+        }
+
+        .image-wrapper.disabled img {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 100%;
+            height: calc(100% - 9px);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 24px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        .selected-images {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 160px;
+            display: flex;
+            flex-direction: column;
+            align-items: end;
+            gap: 4px;
+        }
+
+        .selected-image-wrapper {
+            position: relative;
+            width: calc(100vh/10 - 10px);
+            aspect-ratio: 1;
+            height: calc(100vh/10 - 10px);
+        }
+
+        .selected-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+        }
+
+        .darkened {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        .correct-mark {
+            position: absolute;
+            bottom: 0;
+            right: -12px;
+            width: 50% !important;
+            height: 50% !important;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .arrow-mark {
+            position: absolute;
+            height: 75% !important;
+            left: -82%;
+            top: 14%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .buttons-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px auto;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="image-grid">
+            <!-- Images will be inserted here -->
+        </div>
+        <div class="selected-images">
+            <!-- Selected images will appear here -->
+        </div>
+    </div>
+    <div class="buttons-container">
+        <button class="reset-button">Reset</button>
+        <button class="back-button">Reculer</button>
+        <button class="advance-button">Avancer</button>
+        <button class="restart-button">Restart</button>
+    </div>
+
+    <script>
+        const imageGrid = document.querySelector('.image-grid');
+        const selectedImagesContainer = document.querySelector('.selected-images');
+        const resetButton = document.querySelector('.reset-button');
+        const advanceButton = document.querySelector('.advance-button');
+        const backButton = document.querySelector('.back-button');
+        const restartButton = document.querySelector('.restart-button');
+        const selectedImages = new Map();
+        const MAX_SELECTIONS = 10;
+        let currentDarkened = 0;
+        
+        function updateNumbers() {
+            document.querySelectorAll('.overlay').forEach(overlay => {
+                overlay.style.display = 'none';
+            });
+            
+            let position = 1;
+            selectedImages.forEach((value, key) => {
+                const wrapper = document.querySelector(`[data-index="${key}"]`);
+                const overlay = wrapper.querySelector('.overlay');
+                overlay.style.display = 'flex';
+                overlay.textContent = position++;
+            });
+            
+            selectedImagesContainer.innerHTML = '';
+            Array.from(selectedImages.keys()).forEach((index, position) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'selected-image-wrapper';
+                
+                const img = document.createElement('img');
+                img.src = `/games/${index}.png`;
+                img.alt = `${index}`;
+                
+                if (position < currentDarkened) {
+                    const darkOverlay = document.createElement('div');
+                    darkOverlay.className = 'darkened';
+                    wrapper.appendChild(darkOverlay);
+                    
+                    const correctMark = document.createElement('img');
+                    correctMark.src = '/correct.png';
+                    correctMark.className = 'correct-mark';
+                    wrapper.appendChild(correctMark);
+                }
+
+                if (position === currentDarkened) {
+                    const arrowMark = document.createElement('img');
+                    arrowMark.src = '/arrow.png';
+                    arrowMark.className = 'arrow-mark';
+                    wrapper.appendChild(arrowMark);
+                }
+                
+                wrapper.appendChild(img);
+                selectedImagesContainer.appendChild(wrapper);
+            });
+            
+            document.querySelectorAll('.image-wrapper').forEach(wrapper => {
+                if (!wrapper.classList.contains('selected')) {
+                    wrapper.classList.toggle('disabled', selectedImages.size >= MAX_SELECTIONS);
+                }
+            });
+
+            // Update button states
+            advanceButton.disabled = currentDarkened >= selectedImages.size;
+            backButton.disabled = currentDarkened <= 0;
+            restartButton.disabled = currentDarkened === 0;
+        }
+        
+        for (let i = 1; i <= 16; i++) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'image-wrapper';
+            wrapper.setAttribute('data-index', i);
+            
+            const img = document.createElement('img');
+            img.src = `/games/${i}.png`;
+            img.alt = `${i}`;
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            
+            wrapper.appendChild(img);
+            wrapper.appendChild(overlay);
+            imageGrid.appendChild(wrapper);
+            
+            wrapper.addEventListener('click', () => {
+                if (wrapper.classList.contains('selected')) {
+                    wrapper.classList.remove('selected');
+                    selectedImages.delete(i);
+                    currentDarkened = Math.min(currentDarkened, selectedImages.size);
+                    updateNumbers();
+                }
+                else if (selectedImages.size < MAX_SELECTIONS) {
+                    wrapper.classList.add('selected');
+                    selectedImages.set(i, true);
+                    updateNumbers();
+                }
+            });
+        }
+        
+        resetButton.addEventListener('click', () => {
+            const wrappers = document.querySelectorAll('.image-wrapper');
+            wrappers.forEach(wrapper => {
+                wrapper.classList.remove('selected');
+                wrapper.classList.remove('disabled');
+            });
+            selectedImages.clear();
+            currentDarkened = 0;
+            updateNumbers();
+        });
+
+        advanceButton.addEventListener('click', () => {
+            if (currentDarkened < selectedImages.size) {
+                currentDarkened++;
+                updateNumbers();
+            }
+        });
+
+        backButton.addEventListener('click', () => {
+            if (currentDarkened > 0) {
+                currentDarkened--;
+                updateNumbers();
+            }
+        });
+
+        restartButton.addEventListener('click', () => {
+            currentDarkened = 0;
+            updateNumbers();
+        });
+    </script>
+</body>
+</html>
