@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
+    <script src="tmi.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -8,8 +10,37 @@
             font-family: Arial, sans-serif;
             min-height: 100vh;
             background: #f0f0f0;
+            display: flex;
         }
 
+        .twitch-control {
+            width: 300px;
+            background: #f4f4f4;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: absolute;
+            height: 100%;
+        }
+
+        .channel-status {
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .connect-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .main-container {
+            flex-grow: 1;
+        }
+
+        /* Previous styles remain the same */
         .container {
             position: relative;
             max-width: 500px;
@@ -149,32 +180,85 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="image-grid">
-            <!-- Images will be inserted here -->
+    <div class="twitch-control">
+        <div class="channel-status">Channel: None</div>
+        <div class="connect-container">
+            <input type="text" id="channel-input" placeholder="Channel Name">
+            <button id="connect-button">Connect</button>
         </div>
-        <div class="selected-images">
-            <!-- Selected images will appear here -->
-        </div>
+        <div id="mod-logs"></div>
     </div>
-    <div class="buttons-container">
-        <button class="reset-button">Reset</button>
-        <button class="back-button">Reculer</button>
-        <button class="advance-button">Avancer</button>
-        <button class="restart-button">Restart</button>
+    <div class="main-container">
+        <div class="container">
+            <div class="image-grid">
+                <!-- Images will be inserted here -->
+            </div>
+            <div class="selected-images">
+                <!-- Selected images will appear here -->
+            </div>
+        </div>
+        <div class="buttons-container">
+            <button class="reset-button">Reset</button>
+            <button class="back-button">Reculer</button>
+            <button class="advance-button">Avancer</button>
+            <button class="restart-button">Restart</button>
+        </div>
     </div>
 
     <script>
+        const gameMap = {
+            1: 'apex',
+            2: 'bedwars',
+            3: 'beton',
+            4: 'cod',
+            5: 'crab',
+            6: 'cs',
+            7: 'fallguys',
+            8: 'fc25',
+            9: 'fortnite',
+            10: 'geo',
+            11: 'hunt',
+            12: 'multiversus',
+            13: 'millions',
+            14: 'rl',
+            15: 'stumble',
+            16: 'valorant',
+            17: 'chained',
+            18: 'guess',
+            19: 'league',
+            20: 'marvel'
+        };
+
+        const reverseGameMap = Object.fromEntries(
+            Object.entries(gameMap).map(([k, v]) => [v, k])
+        );
+
         const imageGrid = document.querySelector('.image-grid');
         const selectedImagesContainer = document.querySelector('.selected-images');
         const resetButton = document.querySelector('.reset-button');
         const advanceButton = document.querySelector('.advance-button');
         const backButton = document.querySelector('.back-button');
         const restartButton = document.querySelector('.restart-button');
+        const channelStatus = document.querySelector('.channel-status');
+        const channelInput = document.querySelector('#channel-input');
+        const connectButton = document.querySelector('#connect-button');
+
+
         const selectedImages = new Map();
         const MAX_SELECTIONS = 10;
         let currentDarkened = 0;
-        
+        let client = null;
+
+        function logMods(text) {
+            const modLogs = document.querySelector('#mod-logs');
+            const log = document.createElement('div');
+            log.textContent = text;
+            modLogs.appendChild(log);
+            if(modLogs.children.length > 10) {
+                modLogs.removeChild(modLogs.children[0]);
+            }
+        }
+
         function updateNumbers() {
             document.querySelectorAll('.overlay').forEach(overlay => {
                 overlay.style.display = 'none';
@@ -231,7 +315,7 @@
             restartButton.disabled = currentDarkened === 0;
         }
         
-        for (let i = 1; i <= 16; i++) {
+        for (let i = 1; i <= 20; i++) {
             const wrapper = document.createElement('div');
             wrapper.className = 'image-wrapper';
             wrapper.setAttribute('data-index', i);
@@ -290,6 +374,85 @@
         restartButton.addEventListener('click', () => {
             currentDarkened = 0;
             updateNumbers();
+        });
+
+        const handleChat = () => {
+            const channel = channelInput.value.trim().toLowerCase();
+            if (channel) {
+                // Disconnect existing client if exists
+                if (client) {
+                    return
+                }
+
+                // Create new client
+                client = new tmi.Client({
+                    channels: [channel]
+                });
+
+                client.connect().catch(console.error);
+
+                client.on('connected', () => {
+                    channelStatus.textContent = `Channel: ${channel}`;
+                });
+
+                client.on('chat', (channel, tags, message, self) => {
+                    console.log(message)
+                    // Check if the user is a mod
+                    if (tags.mod || tags.badges?.broadcaster) {
+                        const args = message.trim().split(' ');
+                        const command = args[0].toLowerCase();
+
+                        if (command === '!glt') {
+                            switch(args[1]) {
+                                case 'add':
+                                    if (args[2]) {
+                                        const gameName = args[2].toLowerCase();
+                                        const gameIndex = reverseGameMap[gameName];
+                                        console.log(selectedImages, gameIndex)
+                                        if (gameIndex && !selectedImages.has(+gameIndex)) {
+                                            document.querySelector(`[data-index="${gameIndex}"]`).click();
+                                            logMods(`${tags.username} a ajouté ${gameName}`);
+                                        }
+                                    }
+                                    break;
+                                case 'del':
+                                    if (args[2]) {
+                                        const gameName = args[2].toLowerCase();
+                                        const gameIndex = reverseGameMap[gameName];
+                                        if (gameIndex && selectedImages.has(+gameIndex)) {
+                                            document.querySelector(`[data-index="${gameIndex}"]`).click();
+                                            logMods(`${tags.username} a supprimé ${gameName}`);
+                                        }
+                                    }
+                                    break;
+                                case 'next':
+                                    advanceButton.click();
+                                    logMods(`${tags.username} a avancé`);
+                                    break;
+                                case 'prev':
+                                    backButton.click();
+                                    logMods(`${tags.username} a reculé`);
+                                    break;
+                                case 'reset':
+                                    resetButton.click();
+                                    logMods(`${tags.username} a réinitialisé`);
+                                    break;
+                                case 'restart':
+                                    restartButton.click();
+                                    logMods(`${tags.username} a redémarré`);
+                                    break;
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        // Twitch Chat Integration
+        connectButton.addEventListener('click', handleChat);
+        channelInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                handleChat();
+            }
         });
     </script>
 </body>

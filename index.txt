@@ -1,0 +1,27 @@
+"!glt add <name>"
+"!glt del <name>"
+"!glt next"
+"!glt prev"
+"!glt reset" (enleve tout les jeux)
+"!glt restart"
+
+1:apex
+2:bedwars
+3:beton
+4:COD
+5:CRAB
+6:CS
+7:FallGuys
+8:FC25
+9:Fortnite
+10:Geo
+11:HUNT
+12:MultiVersus
+13:Millions
+14:RL
+15:Stumble
+16:Valorant
+17:chained
+18:guess
+19:league
+20:marvel
