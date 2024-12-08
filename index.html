@@ -13,6 +13,11 @@
             display: flex;
         }
 
+        #mod-logs {
+            font-size: x-large;
+            font-weight: bold;
+        }
+
         .twitch-control {
             width: 300px;
             background: #f4f4f4;
@@ -23,6 +28,8 @@
             gap: 10px;
             position: absolute;
             height: 100%;
+            font-size: x-large;
+            font-weight: bold;
         }
 
         .channel-status {
@@ -177,6 +184,11 @@
             background-color: #cccccc;
             cursor: not-allowed;
         }
+        #channel-input {
+            font-size: x-large;
+            font-weight: bold;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -184,7 +196,7 @@
         <div class="channel-status">Channel: None</div>
         <div class="connect-container">
             <input type="text" id="channel-input" placeholder="Channel Name">
-            <button id="connect-button">Connect</button>
+            <button hidden id="connect-button">Connect</button>
         </div>
         <div id="mod-logs"></div>
     </div>
